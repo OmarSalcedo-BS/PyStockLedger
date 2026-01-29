@@ -1,0 +1,4 @@
+
+pytest==8.0.0      # Para hacer tests más avanzados que con unittest
+black==24.1.1       # Para formatear el código automáticamente
+flake8==7.0.0      # Para revisar que cumplas con las normas PEP8
