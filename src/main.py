@@ -1,51 +1,94 @@
+import os
 from core.product import Product
 from core.inventory import Inventory
-from utils.conversor_Moneda import format_to_cop
-from data.storage import save_data, load_data
+from utils.validators import get_validated_input
 
-def run():
-    #Inicializamos el "cerebro" de la aplicacion
-    mi_bodega = Inventory()
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+def seed_data(inventory: Inventory):
+    """Carga 10 productos iniciales para pruebas."""
+    productos_base = [
+        {"name": "Laptop Dell XPS", "price": 4500000, "stock": 5, "sku": "DELL-001"},
+        {"name": "Mouse Logi MX", "price": 350000, "stock": 12, "sku": "LOGI-202"},
+        {"name": "Teclado Keychron", "price": 580000, "stock": 8, "sku": "KEY-K2"},
+        {"name": "Monitor 4K ASUS", "price": 1800000, "stock": 4, "sku": "ASUS-4K"},
+        {"name": "Disco SSD 1TB", "price": 420000, "stock": 20, "sku": "SAMS-SSD"},
+        {"name": "Memoria RAM 16GB", "price": 280000, "stock": 15, "sku": "KING-RAM"},
+        {"name": "Cámara Web HD", "price": 150000, "stock": 2, "sku": "LOGI-C920"},
+        {"name": "Silla Ergonómica", "price": 850000, "stock": 6, "sku": "CHAIR-PRO"},
+        {"name": "Escritorio Elevable", "price": 1200000, "stock": 3, "sku": "DESK-UP"},
+        {"name": "Audífonos Sony XM5", "price": 1600000, "stock": 7, "sku": "SONY-XM5"},
+    ]
+
+    for p in productos_base:
+        nuevo_id = inventory._generate_next_id()
+        nuevo_p = Product(id=nuevo_id, **p)
+        try:
+            inventory.add_product(nuevo_p)
+        except ValueError:
+            continue # Si ya existe por nombre o ID, lo salta
     
-    print("--- PyStockLedger: Iniciando el programa ---")
+    print("productos cargados exitosamente.")
 
-    try:
-        #1. Creamos productos (Instanciando los objetos)
-        p1 = Product(id=1, name ="Aceite de motor", price=15000.00, stock=10, iva=0.19)
-        p2 = Product(id=2, name="Filtro de aire", price=25000.00, stock=5, iva=0.19)
-        p3 = Product(id=3, name="Freno de mano", price=120000.00, stock=2, iva=0.19)
+def menu():
+    clear_screen()
+    inventory = Inventory()
+    
+    while True:
+        print("\n" + "="*40)
+        print("   📦 PYSTOCK LEDGER - SISTEMA DE CONTROL")
+        print("="*40)
+        print("1. Agregar Producto (Manual)")
+        print("2. Registrar Movimiento (IN/OUT)")
+        print("3. Ver Inventario Completo")
+        print("4. Cargar 10 Productos de Prueba (Seed)")
+        print("5. Salir")
         
-        #2. Agregamos los productos a la bodega
-        mi_bodega.add_product(p1)
-        mi_bodega.add_product(p2)
-        mi_bodega.add_product(p3)
+        opcion = input("\nSeleccione una opción: ")
 
-        # Guardar datos
-        save_data(mi_bodega._products)
-       
-        #3. Mostramos los productos
-        print(f" Se han cargado {len(mi_bodega._products)} productos")
-        for product in mi_bodega._products.values():
-            print(product)
+        if opcion == "1":
+            print(f"\n--- Nuevo Producto (ID Sugerido: {inventory._generate_next_id()}) ---")
+            sku = input("SKU/Código (Enter para omitir): ") or "N/A"
+            nombre = input("Nombre: ").strip()
+            precio = get_validated_input("Precio: ", float, min_value=0)
+            stock = get_validated_input("Stock Inicial: ", int, min_value=0)
+            
+            
+            try:
+                nuevo_p = Product(inventory._generate_next_id(), nombre, precio, stock, sku=sku)
+                inventory.add_product(nuevo_p)
+                print("Producto guardado.")
+            except ValueError as e:
+                print(f"Error: {e}")
 
-        #4. Obtenemos el valor total de la bodega
-        total = mi_bodega.get_inventory_value()
-        print(f"El valor total de la bodega es: {format_to_cop(total)}")
+        elif opcion == "2":
+            id_p = get_validated_input("ID del producto: ", int)
+            cant = get_validated_input("Cantidad: ", int, min_value=1)
+            tipo = input("Tipo (IN = Entrada / OUT = Salida): ").upper()
+            motivo = input("Motivo/Referencia: ")
+            
+            try:
+                inventory.register_movement(id_p, cant, tipo, motivo)
+            except ValueError as e:
+                print(f" Error: {e}")
 
-        #5. Probamos el reporte de stock bajo
-        # Queremos ver productos con menos de 5 unidades
-        alerta_stock = mi_bodega.list_low_stock(threshold=5)
-        print(f"Alerta de Stock Bajo (menos de 5): {alerta_stock}")
+        elif opcion == "3":
+            print("\n" + "-"*60)
+            print(f"{'SKU':<10} | {'ID':<4} | {'PRODUCTO':<20} | {'PRECIO':<12} | {'STOCK':<6} | {'IVA':<6} ")
+            print("-"*60)
+            for p in inventory._products.values():
+                # F-string con alineación: < a la izquierda, > a la derecha
+                print(f"{p.sku:<10} | {p.id:<4} | {p.name[:20]:<20} | ${p.price:<11,.0f} | {p.stock:<6} | {p.iva:<6}")
 
-    except ValueError as e:
-        print(f"Error de validación: {e}")
-    except Exception as e:
-        print(f"Error inesperado: {e}")
+        elif opcion == "4":
+            seed_data(inventory)
 
+        elif opcion == "5":
+            print("¡Gracias por usar PyStock Ledger! Saliendo...")
+            break
+        else:
+            print("Opción no válida.")
 
 if __name__ == "__main__":
-    run()
-
-
-        
-        
+    menu()
