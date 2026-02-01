@@ -24,3 +24,21 @@ tests/               # Pruebas unitarias
 requirements.txt     # Dependencias del proyecto
 README.md            # Documentación general
 ```
+
+
+## Requisitos
+- Python 3.12
+- pip
+- Git
+
+## Instalación
+- Clonar el repositorio
+- Crear un entorno virtual con `python -m venv venv`
+- Activar el entorno virtual con `venv\Scripts\activate` (Windows) o `source venv/bin/activate` (Linux/Mac)
+- Instalar dependencias con `pip install -r requirements.txt`
+- Ejecutar el script
+
+## Uso
+- De ser necesario aplicar un fix para el path con: $env:PYTHONPATH += ";$(Get-Location)\src"  (Windows) o export PYTHONPATH="$(pwd)/src" (Linux/Mac)
+- Ejecutar el script con `python src/main.py` o desde el run
+- 
