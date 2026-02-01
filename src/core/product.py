@@ -39,3 +39,15 @@ class Product:
         if self.stock + amount < 0:
             raise ValueError(f"Stock insuficiente para {self.name}. Disponible: {self.stock}")
         self.stock += amount
+
+
+
+    def to_dict(self) -> dict:
+        """Convierte el objeto a un diccionario para su almacenamiento en JSON."""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "price": self.price,
+            "stock": self.stock,
+            "iva": self.iva
+        }

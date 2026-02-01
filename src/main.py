@@ -1,6 +1,7 @@
 from core.product import Product
 from core.inventory import Inventory
 from utils.conversor_Moneda import format_to_cop
+from data.storage import save_data, load_data
 
 def run():
     #Inicializamos el "cerebro" de la aplicacion
@@ -18,6 +19,9 @@ def run():
         mi_bodega.add_product(p1)
         mi_bodega.add_product(p2)
         mi_bodega.add_product(p3)
+
+        # Guardar datos
+        save_data(mi_bodega._products)
        
         #3. Mostramos los productos
         print(f" Se han cargado {len(mi_bodega._products)} productos")

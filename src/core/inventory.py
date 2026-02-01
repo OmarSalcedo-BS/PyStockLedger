@@ -1,5 +1,5 @@
 from src.core.product import Product
-
+from src.data.storage import load_data, save_data
 
 class Inventory:
     """
@@ -8,15 +8,15 @@ class Inventory:
 
 
     def __init__(self) -> None:
-        # Usamos un diccionario para que buscar un producto por ID sea ultra rápido.
-        # { id_del_producto: objeto_producto }
-        self._products: dict[int, Product] = {}
+        # cargar los datos al iniciar
+        self._products = load_data()
 
     def add_product(self, product: Product) -> None:
         """Añade un nuevo producto al sistema."""
         if product.id in self._products:
             raise ValueError(f"El producto con ID {product.id} ya existe.")
         self._products[product.id] = product
+        self.save_to_file() #Guardamos los datos
 
     def get_inventory_value(self) -> float:
         """
@@ -33,3 +33,7 @@ class Inventory:
         # Comprensión con filtro 'if':
         # "Dame el nombre de cada producto SI su stock es menor al límite"
         return [p.name for p in self._products.values() if p.stock < threshold]
+
+    def save_to_file(self) -> None:
+        """Guarda los datos del inventario en un archivo JSON."""
+        save_data(self._products)
