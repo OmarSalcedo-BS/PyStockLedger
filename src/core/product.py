@@ -1,3 +1,5 @@
+from utils.conversor_Moneda import format_to_cop, format_percentege
+
 class Product:
     """
     Representa un producto genérico dentro del sistema de inventario.
@@ -10,18 +12,22 @@ class Product:
         iva (float): Porcentaje de IVA en decimal (ej: 0.19).
     """
 
-    def __init__(self, id: int, name: str, price: float, stock: int = 0, iva: float = 0.19) -> None:
+    def __init__(
+        self, id: int, name: str, price: float, stock: int = 0, iva: float = 0.19, sku: str = "N/A"
+    ) -> None:
         if price < 0 or stock < 0:
             raise ValueError("El precio y el stock inicial no pueden ser negativos.")
-        
+
         self.id = id
+        self.sku = sku
         self.name = name
         self.price = price
         self.stock = stock
         self.iva = iva
+        
 
     def __str__(self) -> str:
-        return f"[{self.id}] {self.name} - ${self.price:.2f} (Stock: {self.stock}, IVA: {self.iva*100}%)"
+        return f"[{self.id}] {self.name} - {format_to_cop(self.price)} (Stock: {self.stock}, IVA: {format_percentege(self.iva)})"
 
     def calculate_total_price(self) -> float:
         """Calcula el precio del producto incluyendo el IVA."""
@@ -30,17 +36,17 @@ class Product:
     def update_stock(self, amount: int) -> None:
         """
         Actualiza el stock sumando (ingreso) o restando (egreso) una cantidad.
-        
+
         Args:
             amount (int): Cantidad a modificar.
         Raises:
             ValueError: Si el stock resultante es menor a cero.
         """
         if self.stock + amount < 0:
-            raise ValueError(f"Stock insuficiente para {self.name}. Disponible: {self.stock}")
+            raise ValueError(
+                f"Stock insuficiente para {self.name}. Disponible: {self.stock}"
+            )
         self.stock += amount
-
-
 
     def to_dict(self) -> dict:
         """Convierte el objeto a un diccionario para su almacenamiento en JSON."""
@@ -49,5 +55,5 @@ class Product:
             "name": self.name,
             "price": self.price,
             "stock": self.stock,
-            "iva": self.iva
+            "iva": self.iva,
         }
