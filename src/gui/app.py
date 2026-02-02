@@ -5,41 +5,69 @@ from src.gui.views.inventory import InventoryView
 
 COLOR_FONDO = "#F2F4F7"
 COLOR_SIDEBAR = "#1A1C1E"
+COLOR_ACCENT = "#3D5AFE"
 
 class PyStockApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+
         self.title("PyStock ERP v2.0 - Beta")
-        self.geometry("1250x850")
+        self.geometry("1366x768")
         self.configure(fg_color=COLOR_FONDO)
         
         self.inventory = Inventory()
-        self.sidebar_is_expanded = False 
 
-        # Configuración de Grid
+        # Layout Principal: Sidebar fijo de 240px
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        # --- SIDEBAR ---
-        self.sidebar = ctk.CTkFrame(self, width=80, corner_radius=0, fg_color=COLOR_SIDEBAR)
+        # --- SIDEBAR FIJO ---
+        self.sidebar = ctk.CTkFrame(self, width=240, corner_radius=0, fg_color=COLOR_SIDEBAR)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
         self.sidebar.grid_propagate(False)
 
-        self.btn_menu = ctk.CTkButton(self.sidebar, text="☰", width=40, height=40, 
-                                      fg_color="#333537", hover_color="#3D5AFE", command=self.toggle_sidebar)
-        self.btn_menu.pack(pady=20)
+        # SECCIÓN LOGO (Reemplazable)
+        self.logo_placeholder = ctk.CTkFrame(self.sidebar, width=60, height=60, corner_radius=12, fg_color=COLOR_ACCENT)
+        self.logo_placeholder.pack(pady=(40, 10))
+        ctk.CTkLabel(self.logo_placeholder, text="📦", font=("Segoe UI", 30)).place(relx=0.5, rely=0.5, anchor="center")
+
+        # Nombre de la App
+        ctk.CTkLabel(self.sidebar, text="PyStock Ledger", font=("Segoe UI", 22, "bold"), text_color="white").pack()
+        
+        # Label de Empresa Cliente (Dinámico)
+        self.lbl_empresa = ctk.CTkLabel(self.sidebar, text="Suministros Industriales S.A.", 
+                                        font=("Segoe UI", 12), text_color="#8A8D91")
+        self.lbl_empresa.pack(pady=(0, 40))
+
+        # Menú de Navegación con nombres completos
+        self.nav_buttons = {}
+        menu_items = [
+            ("📊  Dashboard", "dash"),
+            ("📋  Inventario", "inv"),
+            ("🚚  Movimientos", "mov")
+        ]
+
+        for text, name in menu_items:
+            btn = ctk.CTkButton(
+                self.sidebar, text=text, font=("Segoe UI", 14),
+                height=45, anchor="w", fg_color="transparent", 
+                hover_color="#2A2D30",
+                command=lambda n=name: self.show_view(n)
+            )
+            btn.pack(fill="x", padx=20, pady=5)
+            self.nav_buttons[name] = btn
 
         # --- CONTENEDOR DE VISTAS ---
-        self.container = ctk.CTkFrame(self, fg_color="transparent")
-        self.container.grid(row=0, column=1, sticky="nsew", padx=30, pady=30)
-        self.container.grid_columnconfigure(0, weight=1)
-        self.container.grid_rowconfigure(0, weight=1)
+        self.main_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.main_container.grid(row=0, column=1, sticky="nsew", padx=40, pady=30)
+        self.main_container.grid_columnconfigure(0, weight=1)
+        self.main_container.grid_rowconfigure(0, weight=1)
 
-        # Inicialización de Vistas
+        # Cargar Vistas modulares
         self.views = {
-            "dash": DashboardView(self.container, self.inventory),
-            "inv": InventoryView(self.container, self.inventory)
+            "dash": DashboardView(self.main_container, self.inventory),
+            "inv": InventoryView(self.main_container, self.inventory)
         }
 
         for view in self.views.values():
@@ -48,15 +76,13 @@ class PyStockApp(ctk.CTk):
         self.show_view("dash")
 
     def show_view(self, name):
+        """Cambia la vista y resalta el botón activo."""
+        for n, btn in self.nav_buttons.items():
+            btn.configure(fg_color=COLOR_ACCENT if n == name else "transparent")
+        
         self.views[name].tkraise()
         if hasattr(self.views[name], "refresh"):
             self.views[name].refresh()
-
-    def toggle_sidebar(self):
-        # Lógica de expansión simplificada para la prueba
-        new_width = 220 if not self.sidebar_is_expanded else 80
-        self.sidebar.configure(width=new_width)
-        self.sidebar_is_expanded = not self.sidebar_is_expanded
 
 if __name__ == "__main__":
     app = PyStockApp()

@@ -1,55 +1,31 @@
+from src.data.data_handler import DataHandler
 import json
 import os
-from src.core.product import Product
-from src.core.transaction import Transaction
+from core.transaction import Transaction
+
+
 
 # Definición de la ruta donde se guardaran los datos
 DATA_PATH = "data/inventory.json"
 TRANS_PATH = "data/transactions.json"
 
 
-def save_data(products_dict: dict, transactions_list: list) -> None:
+def load_data(file_path="data/inventory.json"):
     """
-    Guarda Productos e historial en sus respectivos archivos.
+    Ahora usa el DataHandler para asegurar que el diccionario 
+    que recibe el Inventory sea perfecto.
     """
-    try:
-        # Asegurar de que la carpeta data existe
-        os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
+    # En lugar de solo abrir el JSON, lo pasamos por el filtro de Pandas
+    return DataHandler.load_and_standardize(file_path)
 
-        # Convertir los objetos Product a diccionarios antes de guardarlos
-        data_to_save = {pid: p.to_dict() for pid, p in products_dict.items()}
-        with open(DATA_PATH, "w", encoding="utf-8") as f:
-            json.dump(data_to_save, f, indent=4, ensure_ascii=False)
-            
-
-       # Serializar las transacciones (lista de objetos -> lista de dicts)
-        history_to_save = [t.to_dict() for t in transactions_list]
-        with open(TRANS_PATH, "w", encoding="utf-8") as f:
-            json.dump(history_to_save, f, indent=4, ensure_ascii=False)
-
-            print("Datos y movimientos  guardados exitosamente")
-    except Exception as e:
-        print(f"Error al guardar los datos: {e}")
-
-
-def load_data() -> dict:
+def save_data(products_dict, history_list, file_path="data/inventory.json"):
     """
-    Carga los datos del archivo JSON y los convierte en un diccionario de Product.
+    Sigue siendo necesario para escribir en el archivo.
     """
-    try:
-        if not os.path.exists(DATA_PATH):
-            return {}
-
-        with open(DATA_PATH, "r", encoding="utf-8") as f:
-            raw_data = json.load(f)
-
-            # Recibir los objetos Product
-            # Se usa ** para pasar el diccionario como argumentos
-            products = {(int(pid)): Product(**p) for pid, p in raw_data.items()}
-            return products
-    except Exception as e:
-        print(f"Error al cargar los datos: {e}")
-        return {}
+    # Aquí puedes usar Pandas para guardar como CSV o JSON
+    import pandas as pd
+    df = pd.DataFrame.from_dict(products_dict, orient='index')
+    df.to_json(file_path, orient='index', indent=4)
 
 def load_transactions() -> list:
     """Carga el historial desde el archivo JSON."""

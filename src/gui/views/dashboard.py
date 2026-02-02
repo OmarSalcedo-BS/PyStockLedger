@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from src.utils.formatters import format_to_cop
+from src.utils.conversor_Moneda import format_to_cop
 
 class DashboardView(ctk.CTkFrame):
     def __init__(self, parent, inventory):

@@ -3,27 +3,18 @@
 
 Dashboard de stock de inventarios y manejo de datos. Este proyecto está pensado como un ejercicio de estudio, con enfoque en ser escalable y fácil de evolucionar a medida que se agreguen módulos y funcionalidades.
 
-## Estructura del proyecto
+Sistema de gestión de inventarios con arquitectura de datos robusta.
 
-```
-src/
-	__init__.py        # Convierte la carpeta en un paquete
-	main.py            # Punto de entrada de la aplicación
-	core/              # Lógica de negocio (clases base)
-		__init__.py
-		product.py       # Clase Producto y herencias
-		inventory.py     # Clase gestora (el "cerebro")
-	data/              # Manejo de persistencia (JSON/CSV)
-		__init__.py
-		storage.py
-	utils/             # Funciones de ayuda y validaciones
-		__init__.py
-		validators.py
-tests/               # Pruebas unitarias
-.gitignore           # Archivos que Git debe ignorar
-requirements.txt     # Dependencias del proyecto
-README.md            # Documentación general
-```
+
+## 🛠️ Arquitectura de Persistencia
+Hemos implementado una capa de **Sanitización de Datos** para garantizar la integridad del sistema:
+
+1. **Storage Layer (`storage.py`)**: Gestiona la lectura y escritura física de archivos.
+2. **Standardization Layer (`data_handler.py`)**: Utiliza **Pandas** para inyectar valores por defecto (SKU: N/A, IVA: 0.19) y validar tipos numéricos.
+3. **Core Logic (`inventory.py`)**: Recibe datos limpios y listos para la operación del negocio.
+
+
+## Estructura del proyecto
 
 
 ## Requisitos
@@ -41,4 +32,19 @@ README.md            # Documentación general
 ## Uso
 - De ser necesario aplicar un fix para el path con: $env:PYTHONPATH += ";$(Get-Location)\src"  (Windows) o export PYTHONPATH="$(pwd)/src" (Linux/Mac)
 - Ejecutar el script con `python src/main.py` o desde el run
-- 
+
+
+**Para contribuir:**
+1. `git checkout develop`
+2. `git checkout -b feature/nueva-mejora`
+3. Realiza tus cambios y haz merge a `develop`.
+
+## 📂 Estructura del Proyecto
+```text
+├── src/
+│   ├── core/          # Lógica de negocio (Product, Inventory)
+│   ├── data/          # Manejo de persistencia (Pandas Handler)
+│   ├── gui/           # Interfaz gráfica (Views, Main App)
+│   └── utils/         # Formateadores y validadores
+├── data/              # Archivos JSON/CSV
+└── main.py            # Punto de entrada
