@@ -36,6 +36,6 @@ class DashboardView(ctk.CTkFrame):
     def refresh(self):
         summary = self.inventory.get_financial_summary()
         low = len([p for p in self.inventory._products.values() if p.stock < 5])
-        self.cards["val"].configure(text=format_to_cop(summary['current_value']))
+        self.cards["val"].configure(text=format_to_cop(summary['inventory_cost']))
         self.cards["low"].configure(text=f"{low} críticos")
         self.cards["total"].configure(text=f"{len(self.inventory._products)} items")

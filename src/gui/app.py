@@ -2,6 +2,7 @@ import customtkinter as ctk
 from src.core.inventory import Inventory
 from src.gui.views.dashboard import DashboardView
 from src.gui.views.inventory import InventoryView
+from src.gui.views.movements import MovementsView
 
 COLOR_FONDO = "#F2F4F7"
 COLOR_SIDEBAR = "#1A1C1E"
@@ -67,7 +68,8 @@ class PyStockApp(ctk.CTk):
         # Cargar Vistas modulares
         self.views = {
             "dash": DashboardView(self.main_container, self.inventory),
-            "inv": InventoryView(self.main_container, self.inventory)
+            "inv": InventoryView(self.main_container, self.inventory),
+            "mov": MovementsView(self.main_container, self.inventory)
         }
 
         for view in self.views.values():
