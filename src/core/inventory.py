@@ -80,3 +80,29 @@ class Inventory:
         except ValueError as e:
             # Re-lanzamos el error para que la UI lo muestre
             raise ValueError(f"Error en movimiento: {e}")
+
+    def search_products(self, criterio: str) -> list[Product]:
+        """
+        Busca productos por ID o nombre (insensible a mayúsculas/minúsculas).
+        """
+        criterio = criterio.lower()
+        resultados = [
+            p for p in self._products.values()
+            if criterio in p.name.lower() or criterio in str(p.id)
+        ]
+        return resultados
+
+    def get_financial_summary(self) -> dict:
+        """Calcula el total de dinero en ingresos y egresos del historial."""
+        summary = {"in_total": 0.0, "out_total": 0.0, "current_value": self.get_inventory_value()}
+        
+        for t in self._history:
+            # Necesitamos saber el precio del producto al momento de la transacción
+            product = self._products.get(t.product_id)
+            if product:
+                value = t.quantity * product.price
+                if t.type == "IN":
+                    summary["in_total"] += value
+                else:
+                    summary["out_total"] += value
+        return summary
