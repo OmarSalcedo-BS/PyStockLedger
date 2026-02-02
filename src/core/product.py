@@ -1,65 +1,61 @@
-from utils.conversor_Moneda import format_to_cop, format_percentege
+from src.utils.conversor_Moneda import format_to_cop, format_percentege
 
 
 class Product:
-    """
-    Representa un producto genérico dentro del sistema de inventario.
-
-    Attributes:
-        id (int): Identificador único del producto.
-        name (str): Nombre comercial.
-        price (float): Precio unitario (debe ser positivo).
-        stock (int): Cantidad disponible (debe ser >= 0).
-        iva (float): Porcentaje de IVA en decimal (ej: 0.19).
-    """
-
     def __init__(
         self,
-        id: int,
-        name: str,
-        price: float,
-        stock: int = 0,
-        iva: float = 0.19,
-        sku: str = "N/A",
-    ) -> None:
-        if price < 0 or stock < 0:
-            raise ValueError("El precio y el stock inicial no pueden ser negativos.")
+        id,
+        name,
+        sku,
+        price,
+        stock,
+        cost=0.0,
+        tax_purchase=0.19,
+        tax_sale=0.19,
+        **kwargs,
+    ):
+        # 1. Manejo de compatibilidad con JSON viejo
+        # Si en el JSON viene 'iva', lo usamos para los nuevos campos si estos vienen en 0
+        old_iva = kwargs.get("iva", 0.19)
 
         self.id = id
-        self.sku = sku
         self.name = name
-        self.price = price
-        self.stock = stock
-        self.iva = iva
+        self.sku = sku
+        self.price = float(price)
+        self.stock = int(stock)
+        self.cost = float(cost)
+
+        # Asignamos priorizando los nombres nuevos, pero aceptando el viejo
+        self.tax_purchase = float(tax_purchase if tax_purchase != 0.19 else old_iva)
+        self.tax_sale = float(tax_sale if tax_sale != 0.19 else old_iva)
+
+        # 2. Validaciones relajadas (Evitan que el programa explote al cargar)
+        if self.price < 0 or self.stock < 0 or self.cost < 0:
+            raise ValueError("Valores numéricos no pueden ser negativos.")
 
     def __str__(self) -> str:
-        return f"[{self.id}] {self.name} - {format_to_cop(self.price)} (Stock: {self.stock}, IVA: {format_percentege(self.iva)})"
+        # Corregido: usando los nombres nuevos de atributos
+        return f"[{self.id}] {self.name} - {format_to_cop(self.price)} (Stock: {self.stock}, IVA Venta: {format_percentege(self.tax_sale)})"
 
     def calculate_total_price(self) -> float:
-        """Calcula el precio del producto incluyendo el IVA."""
-        return self.price * (1 + self.iva)
+        """Calcula el precio de venta incluyendo su IVA."""
+        return self.price * (1 + self.tax_sale)
 
     def update_stock(self, amount: int) -> None:
-        """
-        Actualiza el stock sumando (ingreso) o restando (egreso) una cantidad.
-
-        Args:
-            amount (int): Cantidad a modificar.
-        Raises:
-            ValueError: Si el stock resultante es menor a cero.
-        """
         if self.stock + amount < 0:
             raise ValueError(
                 f"Stock insuficiente para {self.name}. Disponible: {self.stock}"
             )
         self.stock += amount
 
-    def to_dict(self) -> dict:
-        """Convierte el objeto a un diccionario para su almacenamiento en JSON."""
+    def to_dict(self):
         return {
             "id": self.id,
             "name": self.name,
+            "sku": self.sku,
             "price": self.price,
             "stock": self.stock,
-            "iva": self.iva,
+            "cost": self.cost,
+            "tax_purchase": self.tax_purchase,
+            "tax_sale": self.tax_sale,
         }
