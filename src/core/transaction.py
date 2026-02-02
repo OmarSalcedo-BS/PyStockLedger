@@ -6,7 +6,7 @@ class Transaction:
     Registra un movimiento de inventario (Entrada o Salida).
     """
 
-    def __init__(self, product_id: int, type: str, quantity: int, reason: str = ""):
+    def __init__(self, product_id: int, type: str, quantity: int, reason: str = "", timestamp: str = None):
         self.product_id = product_id
         self.type = type  # "IN" o "OUT"
         self.quantity = quantity

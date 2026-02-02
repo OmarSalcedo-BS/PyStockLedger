@@ -43,7 +43,9 @@ def menu():
         print("2. Registrar Movimiento (IN/OUT)")
         print("3. Ver Inventario Completo")
         print("4. Cargar 10 Productos de Prueba (Seed)")
-        print("5. Salir")
+        print("5. Ver Historial de Movimientos")
+        print("6. Salir")
+        
         
         opcion = input("\nSeleccione una opción: ")
 
@@ -84,7 +86,16 @@ def menu():
         elif opcion == "4":
             seed_data(inventory)
 
-        elif opcion == "5":
+        elif opcion == "5": # Nueva opción
+            print("\n" + "-"*80)
+            print(f"{'FECHA':<20} | {'TIPO':<5} | {'CANT':<5} | {'PRODUCTO':<15} | {'MOTIVO'}")
+            print("-"*80)
+            for t in inventory._history:
+                # Buscamos el nombre del producto para que el reporte sea legible
+                p_name = inventory._products[t.product_id].name if t.product_id in inventory._products else "Desconocido"
+                print(f"{t.timestamp:<20} | {t.type:<5} | {t.quantity:<5} | {p_name:<15} | {t.reason}")
+
+        elif opcion == "6":
             print("¡Gracias por usar PyStock Ledger! Saliendo...")
             break
         else:

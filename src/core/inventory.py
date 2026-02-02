@@ -1,5 +1,5 @@
 from src.core.product import Product
-from src.data.storage import load_data, save_data
+from src.data.storage import load_data, save_data, load_transactions
 from src.core.transaction import Transaction
 
 
@@ -11,7 +11,7 @@ class Inventory:
     def __init__(self) -> None:
         # cargar los datos al iniciar
         self._products = load_data()
-        self._history: list[Transaction] = []  # Se guarda la lista de transacciones
+        self._history = load_transactions()  # Se carga la lista de transacciones
 
     def _generate_next_id(self) -> int:
         """Busca el ID más alto y le suma 1."""
@@ -45,8 +45,8 @@ class Inventory:
         return [p.name for p in self._products.values() if p.stock < threshold]
 
     def save_to_file(self) -> None:
-        """Guarda los datos del inventario en un archivo JSON."""
-        save_data(self._products)
+        """Pasa tanto productos como historial al storage."""
+        save_data(self._products, self._history)
 
     def register_movement(
         self, product_id: int, quantity: int, type: str, reason: str = ""
