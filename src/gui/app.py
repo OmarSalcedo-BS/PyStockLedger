@@ -36,7 +36,7 @@ class PyStockApp(ctk.CTk):
         ctk.CTkLabel(self.sidebar, text="PyStock Ledger", font=("Segoe UI", 22, "bold"), text_color="white").pack()
         
         # Label de Empresa Cliente (Dinámico)
-        self.lbl_empresa = ctk.CTkLabel(self.sidebar, text="Suministros Industriales S.A.", 
+        self.lbl_empresa = ctk.CTkLabel(self.sidebar, text="Nombre de empresa S.A.S", 
                                         font=("Segoe UI", 12), text_color="#8A8D91")
         self.lbl_empresa.pack(pady=(0, 40))
 
@@ -83,6 +83,16 @@ class PyStockApp(ctk.CTk):
         self.views[name].tkraise()
         if hasattr(self.views[name], "refresh"):
             self.views[name].refresh()
+
+
+    
+
+    def on_search_type(self, event=None):
+        """Maneja la búsqueda en el Treeview de inventario."""
+        criterio = self.search_entry.get()
+        # Usamos el método search_products que ya definimos en Inventory
+        resultados = self.inventory.search_products(criterio)
+        self.update_table(resultados) # Función para refrescar el Treeview
 
 if __name__ == "__main__":
     app = PyStockApp()

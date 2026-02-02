@@ -109,3 +109,11 @@ class Inventory:
     def reload(self):
         """Vuelve a cargar los datos correctamente."""
         self.load_from_storage()
+
+    def delete_product(self, product_id: int) -> bool:
+        """Elimina un producto por su ID."""
+        if product_id in self._products:
+            del self._products[product_id]
+            self.save_to_file()
+            return True
+        return False
