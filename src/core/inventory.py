@@ -1,6 +1,13 @@
 from src.core.product import Product
-from src.data.storage import load_data, save_data, load_transactions
+from src.data.storage import (
+    load_data,
+    save_data,
+    load_transactions,
+    load_providers,
+    load_customers,
+)
 from src.core.transaction import Transaction
+
 
 class Inventory:
     """
@@ -14,9 +21,11 @@ class Inventory:
 
     def load_from_storage(self) -> None:
         """Carga y convierte los datos crudos en objetos Product."""
-        raw_data = load_data() 
+        raw_data = load_data()
         self._history = load_transactions()
         self._products = {}
+        self._providers = load_providers()
+        self._customers = load_customers()
 
         for p_id, p_data in raw_data.items():
             # Manejo de compatibilidad si p_data viene anidado
@@ -27,17 +36,19 @@ class Inventory:
 
             try:
                 # Extraemos el IVA antiguo o los nuevos
-                iva_fallback = float(p_data.get('iva', 0.19))
-                
+                iva_fallback = float(p_data.get("iva", 0.19))
+
                 nuevo_producto = Product(
                     id=int(p_id),
-                    name=p_data.get('name', 'Sin Nombre'),
-                    sku=p_data.get('sku', 'N/A'),
-                    price=float(p_data.get('price', 0.0)),
-                    stock=int(p_data.get('stock', 0)),
-                    cost=float(p_data.get('cost', 0.0)), # Nuevo atributo
-                    tax_purchase=float(p_data.get('tax_purchase', iva_fallback)), # Nuevo
-                    tax_sale=float(p_data.get('tax_sale', iva_fallback))  # Nuevo
+                    name=p_data.get("name", "Sin Nombre"),
+                    sku=p_data.get("sku", "N/A"),
+                    price=float(p_data.get("price", 0.0)),
+                    stock=int(p_data.get("stock", 0)),
+                    cost=float(p_data.get("cost", 0.0)),  # Nuevo atributo
+                    tax_purchase=float(
+                        p_data.get("tax_purchase", iva_fallback)
+                    ),  # Nuevo
+                    tax_sale=float(p_data.get("tax_sale", iva_fallback)),  # Nuevo
                 )
                 self._products[int(p_id)] = nuevo_producto
             except (KeyError, TypeError, ValueError) as e:
@@ -60,10 +71,10 @@ class Inventory:
         Maneja tanto objetos Product como diccionarios para evitar errores de atributo.
         """
         dict_para_guardar = {}
-        
+
         for p_id, p in self._products.items():
             # Si 'p' es un objeto de la clase Product
-            if hasattr(p, 'to_dict'):
+            if hasattr(p, "to_dict"):
                 dict_para_guardar[str(p_id)] = p.to_dict()
             # Si 'p' es un diccionario (por si acaso quedó algo del formato viejo)
             elif isinstance(p, dict):
@@ -74,7 +85,7 @@ class Inventory:
         # Aseguramos que el historial sea una lista de diccionarios antes de guardar
         historial_serializado = []
         for t in self._history:
-            if hasattr(t, 'to_dict'):
+            if hasattr(t, "to_dict"):
                 historial_serializado.append(t.to_dict())
             else:
                 historial_serializado.append(t)
@@ -84,7 +95,17 @@ class Inventory:
         except Exception as e:
             print(f"Error crítico al guardar en disco: {e}")
 
-    def register_movement(self, product_id: int, quantity: int, type: str, reason: str = "") -> None:
+    def register_movement(
+        self,
+        product_id: int,
+        quantity: int,
+        type: str,
+        reason: str = "",
+        cost: float = None,
+        tax: float = None,
+        discount: float = 0.0,
+        timestamp: str = None,
+    ) -> None:
         if product_id not in self._products:
             raise ValueError(f"ID {product_id} no encontrado.")
 
@@ -92,8 +113,32 @@ class Inventory:
         amount = quantity if type == "IN" else -quantity
 
         try:
+            # Si es entrada, actualizamos el costo y el impuesto de compra del producto
+            if type == "IN":
+                if cost is not None:
+                    product.cost = float(cost)
+                if tax is not None:
+                    product.tax_purchase = float(tax)
+
+            # Usamos los valores actuales (o los nuevos) como snapshot
+            snapshot_cost = cost if cost is not None else product.cost
+            snapshot_tax = (
+                tax
+                if tax is not None
+                else (product.tax_purchase if type == "IN" else product.tax_sale)
+            )
+
             product.update_stock(amount)
-            new_transaction = Transaction(product_id, type, quantity, reason)
+            new_transaction = Transaction(
+                product_id,
+                type,
+                quantity,
+                reason,
+                snapshot_cost,
+                snapshot_tax,
+                discount=discount,
+                timestamp=timestamp,
+            )
             self._history.append(new_transaction)
             self.save_to_file()
         except ValueError as e:
@@ -106,17 +151,22 @@ class Inventory:
     def search_products(self, criterio: str) -> list[Product]:
         criterio = criterio.lower()
         return [
-            p for p in self._products.values()
-            if criterio in p.name.lower() or criterio in str(p.id) or criterio in p.sku.lower()
+            p
+            for p in self._products.values()
+            if criterio in p.name.lower()
+            or criterio in str(p.id)
+            or criterio in p.sku.lower()
         ]
 
     def get_financial_summary(self) -> dict:
         """Resumen financiero basado en costos y precios de venta."""
         summary = {
             "inventory_cost": self.get_inventory_value(),
-            "potential_revenue": sum([p.price * p.stock for p in self._products.values()]),
+            "potential_revenue": sum(
+                [p.price * p.stock for p in self._products.values()]
+            ),
             "in_count": sum(1 for t in self._history if t.type == "IN"),
-            "out_count": sum(1 for t in self._history if t.type == "OUT")
+            "out_count": sum(1 for t in self._history if t.type == "OUT"),
         }
         return summary
 
@@ -129,3 +179,37 @@ class Inventory:
 
     def reload(self):
         self.load_from_storage()
+
+    def search_customers(self, term):
+        term = term.lower()
+        return [
+            c
+            for nit, c in self._customers.items()
+            if term in nit.lower() or term in c["name"].lower()
+        ]
+
+    def save_customer(
+        self, customer_id: str, name: str, address: str = "", phone: str = ""
+    ):
+        """Guarda un nuevo cliente en memoria y en disco."""
+        from src.data.storage import save_customers
+
+        self._customers[customer_id] = {
+            "name": name,
+            "address": address,
+            "phone": phone,
+        }
+        save_customers(self._customers)
+
+    def save_provider(
+        self, provider_id: str, name: str, address: str = "", phone: str = ""
+    ):
+        """Guarda un nuevo proveedor en memoria y en disco."""
+        from src.data.storage import save_providers
+
+        self._providers[provider_id] = {
+            "name": name,
+            "address": address,
+            "phone": phone,
+        }
+        save_providers(self._providers)
