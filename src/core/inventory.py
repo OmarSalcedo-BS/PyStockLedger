@@ -106,3 +106,10 @@ class Inventory:
                 else:
                     summary["out_total"] += value
         return summary
+
+
+    def reload(self):
+        """Vuelve a cargar los datos desde los archivos JSON."""
+        from src.data.storage import load_data, load_transactions
+        self._products = load_data()
+        self._history = load_transactions()
