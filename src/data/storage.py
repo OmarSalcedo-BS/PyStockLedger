@@ -1,8 +1,8 @@
 from src.data.data_handler import DataHandler
 import json
 import os
-from core.transaction import Transaction
-from core.product import Product
+from src.core.transaction import Transaction
+from src.core.product import Product
 
 
 # Definición de la ruta donde se guardaran los datos
@@ -11,6 +11,7 @@ TRANS_PATH = "data/transactions.json"
 PURCHASES_PATH = "data/purchases.json"
 PROVIDERS_FILE = "data/providers.json"
 CUSTOMERS_FILE = "data/customers.json"
+
 
 def load_data(file_path="data/inventory.json"):
     """
@@ -103,24 +104,31 @@ def load_products(self):
             return {}
 
 
-
 def load_providers():
     if not os.path.exists(PROVIDERS_FILE):
         # Datos iniciales para que pruebes (como los de tu imagen)
         initial_data = {
-            "900123456": {"name": "Distribuciones Yeca S.A.S", "address": "Cl 45 #12-34", "phone": "3001234567"},
-            "800987654": {"name": "Tech Solutions", "address": "Av Siempre Viva 123", "phone": "6014567890"}
+            "900123456": {
+                "name": "Distribuciones Yeca S.A.S",
+                "address": "Cl 45 #12-34",
+                "phone": "3001234567",
+            },
+            "800987654": {
+                "name": "Tech Solutions",
+                "address": "Av Siempre Viva 123",
+                "phone": "6014567890",
+            },
         }
         save_providers(initial_data)
         return initial_data
-    
+
     with open(PROVIDERS_FILE, "r") as f:
         return json.load(f)
+
 
 def save_providers(data):
     with open(PROVIDERS_FILE, "w") as f:
         json.dump(data, f, indent=4)
-
 
 
 def load_customers():
@@ -129,20 +137,21 @@ def load_customers():
         # Datos de ejemplo iniciales para tus sucursales
         initial_data = {
             "SUC-001": {
-                "name": "Sucursal Norte", 
-                "address": "Calle 100 #15-20", 
+                "name": "Sucursal Norte",
+                "address": "Calle 100 #15-20",
                 "phone": "555-1234",
-                "local_name": "PyStock Norte"
+                "local_name": "PyStock Norte",
             }
         }
         save_customers(initial_data)
         return initial_data
-    
-    with open(CUSTOMERS_FILE, "r", encoding='utf-8') as f:
+
+    with open(CUSTOMERS_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
+
 
 def save_customers(data):
     """Guarda el diccionario de clientes en el disco."""
     os.makedirs("data", exist_ok=True)
-    with open(CUSTOMERS_FILE, "w", encoding='utf-8') as f:
+    with open(CUSTOMERS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
