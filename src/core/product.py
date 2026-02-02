@@ -1,5 +1,6 @@
 from utils.conversor_Moneda import format_to_cop, format_percentege
 
+
 class Product:
     """
     Representa un producto genérico dentro del sistema de inventario.
@@ -13,7 +14,13 @@ class Product:
     """
 
     def __init__(
-        self, id: int, name: str, price: float, stock: int = 0, iva: float = 0.19, sku: str = "N/A"
+        self,
+        id: int,
+        name: str,
+        price: float,
+        stock: int = 0,
+        iva: float = 0.19,
+        sku: str = "N/A",
     ) -> None:
         if price < 0 or stock < 0:
             raise ValueError("El precio y el stock inicial no pueden ser negativos.")
@@ -24,7 +31,6 @@ class Product:
         self.price = price
         self.stock = stock
         self.iva = iva
-        
 
     def __str__(self) -> str:
         return f"[{self.id}] {self.name} - {format_to_cop(self.price)} (Stock: {self.stock}, IVA: {format_percentege(self.iva)})"
