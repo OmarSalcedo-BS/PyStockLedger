@@ -1,154 +1,187 @@
 import customtkinter as ctk
+from tkinter import ttk, messagebox
 from src.core.inventory import Inventory
 from src.utils.conversor_Moneda import format_to_cop
 
-# Configuración global de la apariencia
+# Configuración de apariencia
 ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("blue")
+
 
 class PyStockApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-
-        # 1. Configuración de Ventana Principal
-        self.title("PyStock Ledger - Panel de Control")
+        self.title("PyStock Ledger Pro - High Performance")
         self.geometry("1100x700")
         
-        # 2. Inicializar Motor Lógico
+        # 1. Inicializar Motor Lógico
         self.inventory = Inventory()
+        self._search_job = None
 
-        # 3. Configuración del Layout (Grid System)
+        # 2. Configuración de Estilos para Treeview (Tabla Nativa)
+        self.style = ttk.Style()
+        self.style.theme_use("default")
+        
+        self.style.configure("Treeview", 
+            background="#2b2b2b", 
+            foreground="white", 
+            fieldbackground="#2b2b2b", 
+            borderwidth=0,
+            font=("Segoe UI", 10),
+            rowheight=35) # Filas más altas para mejor legibilidad
+
+        # Estilo para la selección
+        self.style.map("Treeview", background=[('selected', '#1f6aa5')])
+        
+        # Estilo para los encabezados
+        self.style.configure("Treeview.Heading", 
+            background="#333333", 
+            foreground="white", 
+            relief="flat",
+            font=("Segoe UI", 10, "bold"))
+
+        # --- TAGS DE COLOR ---
+        # Configuramos la etiqueta 'low_stock' para que pinte la fila de rojo
+        self.tree_font_bold = ("Segoe UI", 10, "bold")
+        # Nota: En Windows/Linux, tag_configure maneja el foreground directamente
+        self.style.configure("Treeview", foreground="white") 
+
+        # 3. Layout Principal
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        # --- BARRA LATERAL (SIDEBAR) ---
-        self.sidebar_frame = ctk.CTkFrame(self, width=220, corner_radius=0)
-        self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(4, weight=1) # Empuja lo de abajo
-
-        self.logo_label = ctk.CTkLabel(
-            self.sidebar_frame, 
-            text="📦 PyStock", 
-            font=ctk.CTkFont(size=24, weight="bold")
-        )
-        self.logo_label.grid(row=0, column=0, padx=20, pady=20)
-
-        self.btn_refresh = ctk.CTkButton(
-            self.sidebar_frame, 
-            text="Actualizar Tabla", 
-            command=self.refresh_data
-        )
-        self.btn_refresh.grid(row=1, column=0, padx=20, pady=10)
-
+        # --- SIDEBAR ---
+        self.sidebar = ctk.CTkFrame(self, width=220, corner_radius=0)
+        self.sidebar.grid(row=0, column=0, sticky="nsew")
+        
+        ctk.CTkLabel(self.sidebar, text="📦 PyStock", font=("Segoe UI", 24, "bold")).grid(row=0, column=0, padx=20, pady=20)
+        
+        ctk.CTkButton(self.sidebar, text="Actualizar Datos", command=self.refresh_data).grid(row=1, column=0, padx=20, pady=10)
+        
         # --- ÁREA CENTRAL ---
         self.main_container = ctk.CTkFrame(self, corner_radius=15)
         self.main_container.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
         self.main_container.grid_columnconfigure(0, weight=1)
-        self.main_container.grid_rowconfigure(2, weight=1) # La tabla se expande
+        self.main_container.grid_rowconfigure(2, weight=1)
 
-        # A. DASHBOARD (Métricas rápidas)
-        self.dash_frame = ctk.CTkFrame(self.main_container, fg_color="transparent")
-        self.dash_frame.grid(row=0, column=0, padx=20, pady=10, sticky="ew")
-        self.dash_frame.grid_columnconfigure((0, 1), weight=1)
+        # Dashboard de Resumen
+        self.lbl_val_data = ctk.CTkLabel(self.main_container, text="Cargando resumen...", font=("Segoe UI", 18, "bold"), text_color="#1f6aa5")
+        self.lbl_val_data.grid(row=0, column=0, pady=15)
 
-        # Card: Valor Total
-        self.card_val = ctk.CTkFrame(self.dash_frame, fg_color="#2b2b2b", corner_radius=10)
-        self.card_val.grid(row=0, column=0, padx=10, pady=5, sticky="nsew")
-        self.lbl_val_data = ctk.CTkLabel(
-            self.card_val, 
-            text="Valor: $ 0", 
-            font=ctk.CTkFont(size=16, weight="bold"), 
-            text_color="#1f6aa5"
-        )
-        self.lbl_val_data.pack(pady=15)
-
-        # Card: Alertas de Stock
-        self.card_low = ctk.CTkFrame(self.dash_frame, fg_color="#2b2b2b", corner_radius=10)
-        self.card_low.grid(row=0, column=1, padx=10, pady=5, sticky="nsew")
-        self.lbl_low_data = ctk.CTkLabel(
-            self.card_low, 
-            text="Alertas: 0", 
-            font=ctk.CTkFont(size=16, weight="bold"), 
-            text_color="#e63946"
-        )
-        self.lbl_low_data.pack(pady=15)
-
-        # B. BARRA DE BÚSQUEDA
+        # Buscador en Tiempo Real
         self.search_var = ctk.StringVar()
-        self.search_var.trace_add("write", self.update_search) 
-        
         self.search_entry = ctk.CTkEntry(
             self.main_container, 
-            placeholder_text="Buscar producto por nombre o SKU...", 
+            placeholder_text="🔍 Escriba para buscar en tiempo real...", 
             textvariable=self.search_var, 
             width=500,
             height=35
         )
-        self.search_entry.grid(row=1, column=0, padx=20, pady=15)
+        self.search_entry.grid(row=1, column=0, padx=20, pady=10)
+        self.search_entry.bind("<KeyRelease>", self.on_key_release)
 
-        # C. TABLA DE RESULTADOS
-        self.scrollable_table = ctk.CTkScrollableFrame(
-            self.main_container, 
-            label_text="ID   |   PRODUCTO   |   PRECIO   |   STOCK   |   SKU",
-            label_font=ctk.CTkFont(weight="bold")
-        )
-        self.scrollable_table.grid(row=2, column=0, padx=15, pady=15, sticky="nsew")
-        self.scrollable_table.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+        # TABLA TREEVIEW
+        columns = ("id", "nombre", "precio", "stock", "sku")
+        self.tree = ttk.Treeview(self.main_container, columns=columns, show="headings")
+        
+        # Definir encabezados y anchos
+        headers = {"id": "ID", "nombre": "PRODUCTO", "precio": "PRECIO", "stock": "STOCK", "sku": "SKU"}
+        for col, text in headers.items():
+            self.tree.heading(col, text=text)
+            self.tree.column(col, anchor="center")
+        
+        self.tree.column("nombre", width=350, anchor="w") # Nombre alineado a la izquierda
+        self.tree.grid(row=2, column=0, padx=20, pady=20, sticky="nsew")
 
-        # Carga inicial de datos
+        # Configurar el color rojo para el Tag
+        self.tree.tag_configure('low_stock', foreground='#e63946')
+
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(self.main_container, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscroll=scrollbar.set)
+        scrollbar.grid(row=2, column=1, sticky="ns")
+
+        # --- EVENTOS ---
+        self.tree.bind("<Double-1>", self.on_item_double_click)
+
+        # Carga inicial
         self.render_inventory()
 
-    # --- MÉTODOS DE ACCIÓN ---
+    # --- LÓGICA DE LA INTERFAZ ---
 
-    def update_search(self, *args):
-        """Filtra la tabla en tiempo real mientras el usuario escribe."""
-        criterio = self.search_var.get()
-        if criterio.strip() == "":
+    def on_key_release(self, event):
+        """Debounce de 100ms para búsqueda ultra rápida."""
+        if self._search_job:
+            self.after_cancel(self._search_job)
+        self._search_job = self.after(100, self.update_search)
+
+    def update_search(self):
+        criterio = self.search_var.get().lower()
+        if not criterio:
             self.render_inventory()
         else:
             resultados = self.inventory.search_products(criterio)
             self.render_inventory(lista_productos=resultados)
 
-    def refresh_data(self):
-        """Sincroniza el inventario con el archivo JSON y refresca la UI."""
-        try:
-            self.inventory.reload() 
-            self.render_inventory()
-            print("Inventario actualizado desde el almacenamiento.")
-        except Exception as e:
-            print(f"Error al refrescar: {e}")
+    def on_item_double_click(self, event):
+        """Maneja el registro de salida al hacer doble click."""
+        selection = self.tree.selection()
+        if not selection: return
+
+        item_id = selection[0]
+        values = self.tree.item(item_id, "values")
+        
+        p_id = int(values[0])
+        p_name = values[1]
+        
+        # Pedir cantidad al usuario
+        dialog = ctk.CTkInputDialog(text=f"¿Cuántas unidades de '{p_name}' salieron?", title="Registrar Salida")
+        respuesta = dialog.get_input()
+        
+        if respuesta:
+            try:
+                cantidad = int(respuesta)
+                if cantidad <= 0: raise ValueError()
+                
+                # Ejecutar en el Core
+                success, msg = self.inventory.register_movement(p_id, cantidad, "OUT", "Venta desde Panel GUI")
+                
+                if success:
+                    self.render_inventory() # Actualiza tabla y dashboard
+                    messagebox.showinfo("Éxito", msg)
+                else:
+                    messagebox.showerror("Sin Stock", msg)
+            except ValueError:
+                messagebox.showerror("Error", "Por favor ingrese un número entero válido.")
 
     def render_inventory(self, lista_productos=None):
-        """Limpia la tabla y dibuja los elementos del inventario."""
-        # Limpieza de widgets existentes
-        for child in self.scrollable_table.winfo_children():
-            child.destroy()
+        """Renderiza la tabla usando Tags para resaltar stock bajo."""
+        # Limpiar tabla
+        for item in self.tree.get_children():
+            self.tree.delete(item)
 
-        # Selección de fuente de datos
         datos = lista_productos if lista_productos is not None else self.inventory._products.values()
 
-        # Dibujado de filas
-        for i, p in enumerate(datos):
-            ctk.CTkLabel(self.scrollable_table, text=str(p.id)).grid(row=i, column=0, pady=5)
-            ctk.CTkLabel(self.scrollable_table, text=p.name, anchor="w").grid(row=i, column=1, sticky="w", padx=10)
-            ctk.CTkLabel(self.scrollable_table, text=format_to_cop(p.price)).grid(row=i, column=2)
+        for p in datos:
+            # Aplicar Tag si el stock es crítico
+            tag = ('low_stock',) if p.stock < 5 else ()
             
-            # Resaltado de stock bajo
-            stock_color = "#e63946" if p.stock < 5 else "white"
-            ctk.CTkLabel(self.scrollable_table, text=str(p.stock), text_color=stock_color, font=ctk.CTkFont(weight="bold" if p.stock < 5 else "normal")).grid(row=i, column=3)
-            
-            ctk.CTkLabel(self.scrollable_table, text=p.sku).grid(row=i, column=4)
-
-        # Actualización de Métricas en el Dashboard
-        self.update_dashboard()
-
-    def update_dashboard(self):
-        """Calcula y muestra los totales financieros y alertas."""
-        summary = self.inventory.get_financial_summary()
-        low_stock_count = len([p for p in self.inventory._products.values() if p.stock < 5])
+            self.tree.insert("", "end", values=(
+                p.id, 
+                p.name, 
+                format_to_cop(p.price), 
+                p.stock, 
+                p.sku
+            ), tags=tag)
         
-        self.lbl_val_data.configure(text=f"Valor Total: {format_to_cop(summary['current_value'])}")
-        self.lbl_low_data.configure(text=f"Alertas de Stock: {low_stock_count}")
+        # Actualizar métricas del dashboard
+        summary = self.inventory.get_financial_summary()
+        self.lbl_val_data.configure(text=f"Valor Total en Almacén: {format_to_cop(summary['current_value'])}")
+
+    def refresh_data(self):
+        """Recarga manual desde el archivo JSON."""
+        self.inventory.reload()
+        self.render_inventory()
+        messagebox.showinfo("Sincronización", "Sincronizado con base de datos JSON.")
 
 if __name__ == "__main__":
     app = PyStockApp()
